@@ -3,7 +3,7 @@ CPPC= c++
 
 NAME= ircserv
 
-CPPFLAGS= -Wall -Wextra -Werror -g -std=c++98 -fsanitize=address
+CPPFLAGS= -Wall -Wextra -Werror -std=c++98 -fsanitize=address -g
 
 SRC= main.cpp Server.cpp CustomException.cpp Parse_PortPW.cpp commands/Invite.cpp  commands/Kick.cpp \
  commands/Mode.cpp  commands/Topic.cpp  commands/Join.cpp utils.cpp Authntication.cpp

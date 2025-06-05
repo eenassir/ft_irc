@@ -57,7 +57,7 @@ void    Server::ServerStarts(){
     }
     Channel b;
     std::cout << "Creat Channel #j\n";
-    b.setName("#j");
+    b.setName("j");
     b.setTopicProtected(true);
     Channels.push_back(b);
     std::cout << "Pushed channel: " << Channels.back().getName()
