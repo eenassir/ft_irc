@@ -14,18 +14,7 @@ void Server::Join(Client client, std::vector<std::string> input)
 		std::string chan_name;
 		for (; input[1][i] && input[1][i] != ','; i++)
 			chan_name.push_back(input[1][i]);
-		// if (chan_name.size() != 1 && chan_name[0] == '#')
-		// {
-			str_names.push_back(chan_name);
-		// }
-		// if (chan_name.size() == 1 && chan_name[0] == '#')
-		// {
-		// 	sendReply(client.getClientSocketfd(), ERR_BADCHANMASK(chan_name));
-		// }
-		// if (chan_name.size() != 0 && chan_name[0] != '#')
-		// {
-		// 	sendReply(client.getClientSocketfd(), ERR_BADCHANMASK(chan_name));
-		// }
+		str_names.push_back(chan_name);
 	}
 
 
@@ -62,7 +51,6 @@ void Server::Join(Client client, std::vector<std::string> input)
 	it_name = str_names.begin();
 	it_key = str_keys.begin();
 	std::vector<Channel>::iterator it = Channels.begin();
-	(void)it;
 	for (; it_name != str_names.end(); it_name++, it_key++)
 	{
 		if (it_name->size() == 0)
@@ -93,7 +81,6 @@ void Server::Join(Client client, std::vector<std::string> input)
 			}
 			if (it != Channels.end())
 			{
-				std::cout <<it->getUserLimit()<<std::endl;
 				if (it->inChannel(client))
 				{
 					sendReply(client.getClientSocketfd(), ERR_USERONCHANNEL(client.getName(), it->getName()));
@@ -108,12 +95,17 @@ void Server::Join(Client client, std::vector<std::string> input)
 							sendReply(client.getClientSocketfd(), ERR_PASSWDMISMATCH(client.getName()));
 							return ;
 						}
+						else if (it->getPass() == *it_key)
+						{
+							sendReply(client.getClientSocketfd(), ERR_USERONCHANNEL(client.getName(), it->getName()));
+							return ;
+						}
 					}
 				}
 				
 				if (it->get_UserLimitFlag())
 				{
-					if (it->getUserLimit() <= it->members.size())
+					if (it->getUserLimit() <= (int)it->members.size())
 					{
 						sendReply(client.getClientSocketfd(), ERR_CHANNELISFULL(client.getName(), name));
 						return ;
@@ -125,11 +117,24 @@ void Server::Join(Client client, std::vector<std::string> input)
 					sendReply(client.getClientSocketfd(), ERR_INVITEONLYCHAN(client.getName(), name));
 					return ;
 				}
-				Channel next;
-				next.getName();
-				next.admines.push_back(name);
-				Channels.push_back();
 			}
-	}	}
-	return ;
+			else
+			{
+				Channel next;
+				next.setName(name);
+				if (*it_key != "NO_PASS")
+				{
+					next.setPass(*it_key);
+					next.set_pass_flag(true);
+				}
+				else
+				{
+					next.set_pass_flag(false);
+				}
+				next.members.push_back(client);
+				next.admines.push_back(client);
+				Channels.push_back(next);
+			}
+		}
+	}	
 }
