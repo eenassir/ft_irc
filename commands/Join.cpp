@@ -84,7 +84,7 @@ void Server::Join(Client client, std::vector<std::string> input)
 				if (it->inChannel(client))
 				{
 					sendReply(client.getClientSocketfd(), ERR_USERONCHANNEL(client.getName(), it->getName()));
-					return ;
+					continue ;
 				}
 				if (it->get_pass_flag())
 				{
@@ -93,48 +93,76 @@ void Server::Join(Client client, std::vector<std::string> input)
 						if (it->getPass() != *it_key)
 						{
 							sendReply(client.getClientSocketfd(), ERR_PASSWDMISMATCH(client.getName()));
-							return ;
-						}
-						else if (it->getPass() == *it_key)
-						{
-							sendReply(client.getClientSocketfd(), ERR_USERONCHANNEL(client.getName(), it->getName()));
-							return ;
+							continue ;
 						}
 					}
+					else if (*it_key == "NO_PASS")
+					{
+						sendReply(client.getClientSocketfd(), ERR_INCORPASS(client.getName()));
+						continue ;
+					}
 				}
-				
 				if (it->get_UserLimitFlag())
 				{
 					if (it->getUserLimit() <= (int)it->members.size())
 					{
 						sendReply(client.getClientSocketfd(), ERR_CHANNELISFULL(client.getName(), name));
-						return ;
+						continue ;
 					}
 				}
 				
 				if (it->getInviteOnly())
 				{
 					sendReply(client.getClientSocketfd(), ERR_INVITEONLYCHAN(client.getName(), name));
-					return ;
+					continue ;
 				}
+				it->members.push_back(client);
+				std::vector<Client>::iterator it_member = it->members.begin();
+				for (; it_member != it->members.end(); it_member++)
+				{
+					sendReply(it_member->getClientSocketfd(), RPL_JOIN(client.getName(), it->getName()));
+				}
+				if (it->getTopic() == "")
+					sendReply(client.getClientSocketfd(), RPL_NOTOPIC(client.getName(), name));
+				else 
+				{
+					sendReply(client.getClientSocketfd(), RPL_TOPIC(client.getName(), it->getName(), it->getTopic()));
+            		sendReply(client.getClientSocketfd(), RPL_TOPICWHOTIME(client.getName(), it->getName(), it->gethowsetTopic(), toString(it->getTopicsetAtime())));
+				}
+				std::string usres;
+				for (size_t j = 0; j < it->members.size(); j++)
+				{
+					usres.append(it->members[j].getName());
+					usres.append(" ");
+				}
+				sendReply(client.getClientSocketfd(), RPL_NAMREPLY(client.getName(), it->getName(), usres));
+				sendReply(client.getClientSocketfd(), RPL_ENDOFNAMES(client.getName(), it->getName()));
 			}
 			else
 			{
-				Channel next;
-				next.setName(name);
+				Channel last_chan;
+				last_chan.setName(name);
 				if (*it_key != "NO_PASS")
 				{
-					next.setPass(*it_key);
-					next.set_pass_flag(true);
+					last_chan.setPass(*it_key);
+					last_chan.set_pass_flag(true);
 				}
-				else
+				else if (*it_key == "NO_PASS")
 				{
-					next.set_pass_flag(false);
+					last_chan.setPass("");
+					last_chan.set_pass_flag(false);
 				}
-				next.members.push_back(client);
-				next.admines.push_back(client);
-				Channels.push_back(next);
+				last_chan.set_UserLimitFlag(0);
+				last_chan.setInviteOnly(0);
+				last_chan.setTopicProtected(0);
+				last_chan.members.push_back(client);
+				last_chan.admines.push_back(client);
+				Channels.push_back(last_chan);
+				sendReply(client.getClientSocketfd(), ":" + client.getHostname() + " JOIN :#" + name + "\r\n");
+				sendReply(client.getClientSocketfd(), RPL_NOTOPIC(client.getName(), name));
+				sendReply(client.getClientSocketfd(), RPL_NAMREPLY(client.getName(), name, client.getName()));
+				sendReply(client.getClientSocketfd(), RPL_ENDOFNAMES(client.getName(), name));
 			}
 		}
-	}	
+	}
 }
